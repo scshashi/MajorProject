@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}Step 4 – Mind & Wellness{% endblock %}
+{% block content %}
+<div class="container-xl py-5" style="max-width:760px;">
+
+  <!-- Step progress header -->
+  <div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+      <span class="small text-muted font-monospace">Step 4 of 4 · Mind &amp; Wellness</span>
+      <span class="small fw-600 text-success">100% Complete</span>
+    </div>
+    <div class="progress mb-4" style="height:6px;background:var(--surface-overlay);border-radius:50px;">
+      <div class="progress-bar" role="progressbar" style="width: 100%; background:var(--grad-primary); border-radius:50px;" aria-valuenow="4" aria-valuemin="1" aria-valuemax="4"></div>
+    </div>
+
+    <!-- Step wizard pills -->
+    <div class="step-wizard">
+      {% for i, label in [(1,'Profile & Vitals'),(2,'Lifestyle & Diet'),(3,'Medical & Family'),(4,'Mind & Wellness')] %}
+      <div class="step-item {{ 'active' if step == i else ('done' if step > i else 'inactive') }}">
+        <div class="step-circle">{% if step > i %}<i class="bi bi-check2"></i>{% else %}{{ i }}{% endif %}</div>
+        <div class="step-label">{{ label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="glass-card p-4 p-md-5">
+    <h2 class="fs-4 fw-700 mb-1">Mental Well-being &amp; Behavioral Habits</h2>
+    <p class="text-muted small mb-4">Final step! Emotional wellbeing, stress management, and substance habits provide critical holistic context for our AI models.</p>
+
+    <!-- Medical Notice -->
+    <div class="alert alert-warning bg-warning bg-opacity-10 border-warning border-opacity-25 py-2 px-3 small mb-4 d-flex align-items-center gap-2">
+      <i class="bi bi-info-circle text-warning flex-shrink-0"></i>
+      <span class="text-secondary">This assessment provides AI-based health risk insights for informational purposes only. It is not a medical diagnosis.</span>
+    </div>
+
+    <form method="POST" novalidate id="step4Form">
+      {{ form.hidden_tag() }}
+
+      <!-- Section: Stress & Behavioral Habits -->
+      <h5 class="fs-6 fw-700 text-uppercase tracking-wider text-danger mb-3 d-flex align-items-center gap-2">
+        <i class="bi bi-lightning-charge"></i> Stress &amp; Behavioral Habits
+      </h5>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="form-label fw-500" for="q4Stress">
+            {{ form.stress_level.label.text }} <span class="text-danger">*</span>
+            <span class="badge bg-secondary-subtle text-muted ms-1 small">1–10</span>
+          </label>
+          {{ form.stress_level(class="form-control" + (" is-invalid" if form.stress_level.errors else ""), placeholder="e.g. 5", id="q4Stress", min="1", max="10", data_min="1", data_max="10", data_label="Stress Level", data_unit="/10") }}
+          {% for e in form.stress_level.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-500" for="q4Smoke">
+            {{ form.smoking_status.label.text }} <span class="text-danger">*</span>
+          </label>
+          {{ form.smoking_status(class="form-select" + (" is-invalid" if form.smoking_status.errors else ""), id="q4Smoke") }}
+          {% for e in form.smoking_status.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-500" for="q4Alcohol">
+            {{ form.alcohol_intake.label.text }} <span class="text-danger">*</span>
+          </label>
+          {{ form.alcohol_intake(class="form-select" + (" is-invalid" if form.alcohol_intake.errors else ""), id="q4Alcohol") }}
+          {% for e in form.alcohol_intake.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <!-- Conditional Smoker Frequency Field -->
+      <div class="mb-3" id="smokingFrequencyContainer" style="display: none;">
+        <div class="p-3 rounded-3" style="background: rgba(239, 68, 68, 0.06); border: 1px dashed rgba(239, 68, 68, 0.3);">
+          <label class="form-label fw-600 text-danger" for="q4Cigarettes">
+            {{ form.cigarettes_per_day.label.text }} <span class="text-danger">*</span>
+          </label>
+          {{ form.cigarettes_per_day(class="form-control" + (" is-invalid" if form.cigarettes_per_day.errors else ""), id="q4Cigarettes", placeholder="e.g. 5, 10, 20", min="1", max="100", data_min="1", data_max="100", data_label="Times Smoked per Day", data_unit="cigs/day") }}
+          <div class="form-text text-muted small"><i class="bi bi-info-circle me-1"></i>Since you selected Current Smoker, please specify daily frequency.</div>
+          {% for e in form.cigarettes_per_day.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <hr class="my-4 border-secondary opacity-25">
+
+      <!-- Section: Mental Well-being -->
+      <h5 class="fs-6 fw-700 text-uppercase tracking-wider text-primary mb-3 d-flex align-items-center gap-2">
+        <i class="bi bi-emoji-smile"></i> Mental Well-being &amp; Mindfulness
+      </h5>
+
+      <div class="row g-3 mb-4">
+        {% for field in [form.depression_symptoms, form.anxiety_symptoms, form.mental_health_support] %}
+        <div class="col-12">
+          <div class="form-check p-3 rounded-3 h-100 d-flex align-items-center" style="background:var(--surface-overlay);border:1px solid var(--surface-border);transition:all 0.2s ease;">
+            {{ field(class="form-check-input me-3 ms-0", id="q4_" ~ field.name, style="width:1.2rem;height:1.2rem;cursor:pointer;") }}
+            <label class="form-check-label small fw-500 mb-0" for="{{ 'q4_' ~ field.name }}" style="cursor:pointer;user-select:none;color:var(--text-primary);">
+              {{ field.label.text }}
+            </label>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="form-label fw-500" for="q4Meditation">{{ form.meditation_yoga.label.text }}</label>
+          {{ form.meditation_yoga(class="form-select" + (" is-invalid" if form.meditation_yoga.errors else ""), id="q4Meditation") }}
+          {% for e in form.meditation_yoga.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-500" for="q4Pregnancy">{{ form.pregnancy_status.label.text }}</label>
+          {% if is_female %}
+            {{ form.pregnancy_status(class="form-select" + (" is-invalid" if form.pregnancy_status.errors else ""), id="q4Pregnancy") }}
+            {% for e in form.pregnancy_status.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+          {% else %}
+            <select class="form-select text-muted" id="q4PregnancyDisabled" disabled style="opacity: 0.7; cursor: not-allowed;">
+              <option value="N/A" selected>Not applicable (Female only)</option>
+            </select>
+            <input type="hidden" name="pregnancy_status" value="N/A">
+            <div class="form-text text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>Available for female profiles only.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="alert alert-success alert-sm py-2 px-3 small mb-4 d-flex align-items-center gap-2" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);">
+        <i class="bi bi-check2-circle text-success fs-5"></i>
+        <span class="text-success-emphasis">All 4 steps ready! Click below to run your full ML health analysis.</span>
+      </div>
+
+      <!-- Action buttons & Dynamic Step Unlock -->
+      <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center pt-3 border-top border-secondary border-opacity-25 gap-3">
+        <a href="{{ url_for('predict.step3', qid=qid) }}" class="btn btn-outline-secondary rounded-pill px-4">← Back</a>
+        
+        <div class="d-flex align-items-center gap-3">
+          <!-- Notice shown when mandatory habits are incomplete -->
+          <div id="stepLockedNotice" class="d-flex align-items-center gap-2 text-warning small bg-warning bg-opacity-10 border border-warning border-opacity-25 px-3 py-2 rounded-pill">
+            <i class="bi bi-lock-fill text-warning"></i>
+            <span>Fill mandatory habits above to unlock final analysis (<span id="filledCount">0</span>/3)</span>
+          </div>
+
+          <!-- Final Submit button only appears when filled -->
+          <button type="submit" class="btn btn-gradient rounded-pill px-5 py-2.5 fw-600" id="q4Submit" style="display: none;">
+            <span class="submit-text"><i class="bi bi-rocket-takeoff me-2"></i>Analyze My Health 🚀</span>
+            <span class="submit-spinner d-none">
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Analyzing your health information &amp; generating insights...
+            </span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% include "predict/_boundary_modal.html" %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const form = document.getElementById("step4Form");
+  const smokeSelect = document.getElementById("q4Smoke");
+  const smokeFreqContainer = document.getElementById("smokingFrequencyContainer");
+  const cigsInput = document.getElementById("q4Cigarettes");
+  const stressInput = document.getElementById("q4Stress");
+  const alcoholSelect = document.getElementById("q4Alcohol");
+  const submitBtn = document.getElementById("q4Submit");
+  const lockedNotice = document.getElementById("stepLockedNotice");
+  const filledCountEl = document.getElementById("filledCount");
+
+  function toggleSmokingField() {
+    if (!smokeSelect || !smokeFreqContainer) return;
+    if (smokeSelect.value === "Current") {
+      smokeFreqContainer.style.display = "block";
+    } else {
+      smokeFreqContainer.style.display = "none";
+      if (cigsInput) cigsInput.value = "";
+    }
+    checkFormCompletion();
+  }
+
+  function checkFormCompletion() {
+    let filled = 0;
+    let totalNeeded = 3;
+
+    if (stressInput && stressInput.value.trim() !== "") filled++;
+    if (alcoholSelect && alcoholSelect.value.trim() !== "") filled++;
+
+    if (smokeSelect && smokeSelect.value.trim() !== "") {
+      if (smokeSelect.value === "Current") {
+        totalNeeded = 4;
+        if (cigsInput && cigsInput.value.trim() !== "") {
+          filled += 2; // smoke select + count
+        } else {
+          filled += 1;
+        }
+      } else {
+        filled++;
+      }
+    }
+
+    if (filledCountEl) filledCountEl.textContent = filled;
+
+    if (filled >= totalNeeded) {
+      if (lockedNotice) lockedNotice.style.display = "none";
+      if (submitBtn) {
+        submitBtn.style.display = "inline-flex";
+        submitBtn.classList.add("shadow-lg");
+      }
+    } else {
+      if (lockedNotice) lockedNotice.style.display = "flex";
+      if (submitBtn) submitBtn.style.display = "none";
+    }
+  }
+
+  if (smokeSelect) {
+    smokeSelect.addEventListener("change", toggleSmokingField);
+    toggleSmokingField();
+  }
+
+  [stressInput, alcoholSelect, cigsInput].filter(Boolean).forEach(input => {
+    input.addEventListener("input", checkFormCompletion);
+    input.addEventListener("change", checkFormCompletion);
+  });
+
+  checkFormCompletion();
+
+  // Loading spinner on submission
+  form?.addEventListener('submit', function(e) {
+    if (submitBtn && this.checkValidity()) {
+      submitBtn.disabled = true;
+      submitBtn.querySelector('.submit-text')?.classList.add('d-none');
+      submitBtn.querySelector('.submit-spinner')?.classList.remove('d-none');
+    }
+  });
+});
+</script>
+{% endblock %}

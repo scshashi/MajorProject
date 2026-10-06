@@ -1,0 +1,1184 @@
+{% extends "base.html" %}
+{% block title %}Daily Health Log{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Daily Log Form Styles ─────────────────────────────────────── */
+.log-section-card {
+  background: var(--glass-bg, rgba(255,255,255,0.04));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 1.75rem;
+  margin-bottom: 1.5rem;
+  transition: border-color .3s;
+}
+.log-section-card:hover { border-color: rgba(108,99,255,.35); }
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: .75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.section-icon {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.section-icon.purple { background: rgba(108,99,255,.18); }
+.section-icon.teal   { background: rgba(78,205,196,.18); }
+.section-icon.green  { background: rgba(16,185,129,.18); }
+.section-icon.orange { background: rgba(249,115,22,.18); }
+.section-icon.pink   { background: rgba(236,72,153,.18); }
+.section-icon.blue   { background: rgba(59,130,246,.18); }
+.section-icon.red    { background: rgba(239,68,68,.18); }
+
+.log-form-control {
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  color: var(--text-primary, #f1f5f9) !important;
+  border-radius: 10px !important;
+  transition: border-color .25s, box-shadow .25s;
+}
+.log-form-control:focus {
+  border-color: #6C63FF !important;
+  box-shadow: 0 0 0 3px rgba(108,99,255,.15) !important;
+  background: rgba(108,99,255,.05) !important;
+}
+.log-form-control option { background: #1e1e2e; }
+
+/* Toggle buttons for boolean fields */
+.toggle-group .btn-check + .btn {
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-muted, #94a3b8);
+  font-size: .85rem;
+  padding: .5rem 1rem;
+  transition: all .25s;
+}
+.toggle-group .btn-check:checked + .btn-outline-success {
+  background: rgba(16,185,129,.2);
+  border-color: #10b981;
+  color: #10b981;
+}
+.toggle-group .btn-check:checked + .btn-outline-danger {
+  background: rgba(239,68,68,.15);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Slider style */
+.range-slider { accent-color: #6C63FF; }
+
+.mood-btn { cursor:pointer; font-size:1.4rem; transition: transform .2s; }
+.mood-btn:hover { transform: scale(1.2); }
+.mood-btn.active { filter: drop-shadow(0 0 8px #6C63FF); transform: scale(1.25); }
+
+/* Already logged card */
+.logged-today-card {
+  background: linear-gradient(135deg, rgba(16,185,129,.12), rgba(78,205,196,.08));
+  border: 1px solid rgba(16,185,129,.25);
+  border-radius: 20px;
+  padding: 3rem;
+  text-align: center;
+}
+
+/* Step progress bar */
+.form-progress { display: flex; gap: .5rem; margin-bottom: 2rem; }
+.form-progress-step {
+  flex: 1; height: 4px; border-radius: 99px;
+  background: rgba(255,255,255,.1);
+  transition: background .4s;
+}
+/* Voice Assistant Styles */
+.mic-pulse-ring {
+  position: absolute;
+  top: -4px; left: -4px; right: -4px; bottom: -4px;
+  border-radius: 50%;
+  border: 2px solid #6C63FF;
+  animation: pulse-ring 1.5s infinite;
+  opacity: 0;
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 0.4; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+.voice-field-highlight {
+  animation: voice-glow 2s ease-in-out;
+}
+@keyframes voice-glow {
+  0% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.5); border-color: #10b981 !important; }
+  50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.3); border-color: #10b981 !important; }
+  100% { box-shadow: none; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-xl py-5">
+
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 animate-fade-up gap-3">
+    <div class="text-center text-md-start">
+      <div class="d-flex align-items-center gap-2 justify-content-center justify-content-md-start">
+        <span style="font-size:2.5rem;">📋</span>
+        <div>
+          <h1 class="section-title mb-0 fs-3">Daily Health Log</h1>
+          <p class="text-muted small mb-0">Track your lifestyle for personalised AI health insights</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Voice Input Toggle Widget -->
+    <div class="voice-toggle-card p-2 px-3 rounded-pill glass-card d-flex align-items-center gap-3 border ms-md-auto" style="background: rgba(108,99,255,0.08); border-color: rgba(108,99,255,0.25) !important;">
+      <div class="d-flex align-items-center gap-2">
+        <span class="fs-5" id="micIconStatus">🎙️</span>
+        <span class="fw-600 small" id="voiceToggleLabel">Voice Input</span>
+      </div>
+      <div class="form-check form-switch mb-0">
+        <input class="form-check-input" type="checkbox" role="switch" id="voiceInputToggle" style="width: 2.8em; height: 1.4em; cursor: pointer;">
+      </div>
+    </div>
+  </div>
+
+  {% if already_logged and today_log %}
+  <!-- ── Already Logged Today ─────────────────────────────────── -->
+  <div class="logged-today-card animate-fade-up">
+    <div style="font-size:3.5rem;" class="mb-3">✅</div>
+    <h3 class="fw-700 mb-2 text-success">Already Logged Today!</h3>
+    <p class="text-muted mb-1">
+      You logged your health data for <strong>{{ today_log.log_date.strftime('%B %d, %Y') }}</strong>.
+    </p>
+    <p class="text-muted mb-4">Your daily health score: <span class="fw-700 gradient-text fs-4">{{ today_log.healthy_habits_score }}</span>/100</p>
+    <div class="d-flex gap-3 justify-content-center flex-wrap">
+      <a href="{{ url_for('tracker.progress') }}" class="btn btn-gradient rounded-pill px-4 py-2">
+        <i class="bi bi-graph-up me-2"></i>View Progress
+      </a>
+    </div>
+
+    <!-- Quick Stats from Today's Log -->
+    <div class="row g-3 mt-4">
+      {% set quick = [
+        ('😴', 'Sleep', today_log.sleep_hours ~ ' hrs'),
+        ('💧', 'Water', today_log.water_intake ~ ' L'),
+        ('🏃', 'Exercise', today_log.exercise_minutes ~ ' min'),
+        ('😰', 'Stress', today_log.stress_level ~ '/10'),
+        ('⚖️', 'Weight', today_log.weight ~ ' kg'),
+        ('😊', 'Mood', today_log.mood),
+      ] %}
+      {% for icon, label, val in quick %}
+      <div class="col-6 col-md-2">
+        <div class="p-3 rounded-3 text-center" style="background:rgba(255,255,255,.05);">
+          <div style="font-size:1.5rem;">{{ icon }}</div>
+          <div class="fw-700 gradient-text">{{ val }}</div>
+          <div class="text-muted" style="font-size:.75rem;">{{ label }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% else %}
+  <!-- ── Log Form ─────────────────────────────────────────────── -->
+  <form method="POST" action="{{ url_for('tracker.log_form') }}" id="dailyLogForm" novalidate>
+    {{ form.hidden_tag() }}
+
+    <!-- Voice Assistant Active Panel -->
+    <div id="voiceAssistantPanel" class="log-section-card border-primary animate-fade-up mb-4 d-none" style="background: linear-gradient(135deg, rgba(108,99,255,0.12), rgba(78,205,196,0.08)); border-color: rgba(108,99,255,0.4) !important;">
+      <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3 pb-3 border-bottom border-secondary border-opacity-25">
+        <div class="d-flex align-items-center gap-3">
+          <div class="position-relative">
+            <div class="mic-pulse-ring" id="micPulseRing"></div>
+            <div class="btn btn-sm btn-primary rounded-circle p-3 d-flex align-items-center justify-content-center" style="width:48px;height:48px;" id="micPulseBtn">
+              <i class="bi bi-mic-fill fs-5" id="micBtnIcon"></i>
+            </div>
+          </div>
+          <div>
+            <div class="fw-700 d-flex align-items-center gap-2">
+              <span>Voice AI Assistant</span>
+              <span class="badge bg-primary rounded-pill px-2 py-1 small" id="voiceStatusBadge">Listening...</span>
+            </div>
+            <div class="text-muted small">Speak naturally. Example: <em>"Slept 8 hours, 3 liters water, 8000 steps, running, happy mood, weight 70 kg, blood pressure 120 over 80"</em></div>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" id="clearVoiceTranscriptBtn">
+            <i class="bi bi-trash me-1"></i> Clear
+          </button>
+          <button type="button" class="btn btn-sm btn-gradient rounded-pill px-3" id="toggleMicListenBtn">
+            <i class="bi bi-pause-fill me-1" id="listenBtnIcon"></i> <span id="listenBtnText">Pause</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Transcript Box -->
+      <div class="p-3 rounded-3 mb-1" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); min-height: 60px;">
+        <div class="small text-muted mb-1 d-flex justify-content-between">
+          <span><i class="bi bi-chat-left-quote me-1"></i> Live Spoken Transcript:</span>
+          <span class="badge bg-success-subtle text-success small" id="fieldsUpdatedCountBadge">0 fields filled</span>
+        </div>
+        <div id="voiceTranscriptText" class="text-light fs-6 font-monospace" style="white-space: pre-wrap;"><em>Listening for your voice input...</em></div>
+
+        <!-- Extracted Data Badges -->
+        <div id="voiceParsedTagsContainer" class="mt-3 pt-2 border-top border-secondary border-opacity-25 d-none">
+          <div class="small text-muted mb-2 d-flex align-items-center gap-1">
+            <i class="bi bi-magic text-primary"></i>
+            <span>Recognized Data Extracted:</span>
+          </div>
+          <div id="voiceParsedTags" class="d-flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Progress Bar -->
+    <div class="form-progress" id="formProgress">
+      {% for i in range(8) %}<div class="form-progress-step {% if i == 0 %}active{% endif %}" data-step="{{ i }}"></div>{% endfor %}
+    </div>
+
+    <!-- ── Section 1: Date ───────────────────────────────────── -->
+    <div class="log-section-card animate-fade-up" id="section-0">
+      <div class="section-header">
+        <div class="section-icon purple">📅</div>
+        <div>
+          <div class="fw-700">Log Date</div>
+          <div class="text-muted small">Select the date you are logging for</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        {{ form.log_date.label(class="form-label fw-600 small") }}
+        {{ form.log_date(class="form-control log-form-control", id="log_date") }}
+        {% if form.log_date.errors %}
+          <div class="text-danger small mt-1">{{ form.log_date.errors[0] }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ── Section 2: Sleep ─────────────────────────────────── -->
+    <div class="log-section-card animate-fade-up delay-100" id="section-1">
+      <div class="section-header">
+        <div class="section-icon purple">😴</div>
+        <div>
+          <div class="fw-700">Sleep</div>
+          <div class="text-muted small">How well did you sleep?</div>
+        </div>
+      </div>
+      <div class="row g-4">
+        <div class="col-md-6">
+          {{ form.sleep_hours.label(class="form-label fw-600 small") }}
+          <div class="d-flex align-items-center gap-3">
+            {{ form.sleep_hours(class="form-control log-form-control", min="0", max="24", step="0.5", placeholder="e.g. 7.5") }}
+          </div>
+          {% if form.sleep_hours.errors %}
+            <div class="text-danger small mt-1">{{ form.sleep_hours.errors[0] }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          {{ form.sleep_quality.label(class="form-label fw-600 small") }}
+          <div class="d-flex gap-2 mt-1">
+            {% for val, label in form.sleep_quality.choices %}
+            <div class="text-center">
+              <input type="radio" class="btn-check" name="sleep_quality" id="sq_{{ val }}" value="{{ val }}"
+                     {% if form.sleep_quality.data == val %}checked{% endif %}>
+              <label for="sq_{{ val }}" class="btn btn-sm px-3" style="border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);color:var(--text-muted);">
+                {{ val }}<br><span style="font-size:.65rem;">{{ label.split('–')[1].strip() if '–' in label else label }}</span>
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+          {% if form.sleep_quality.errors %}
+            <div class="text-danger small mt-1">{{ form.sleep_quality.errors[0] }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section 3: Hydration ─────────────────────────────── -->
+    <div class="log-section-card animate-fade-up delay-150" id="section-2">
+      <div class="section-header">
+        <div class="section-icon teal">💧</div>
+        <div>
+          <div class="fw-700">Water Intake</div>
+          <div class="text-muted small">Stay hydrated — target 2.5 L/day</div>
+        </div>
+      </div>
+      <div class="col-md-5">
+        {{ form.water_intake.label(class="form-label fw-600 small") }}
+        {{ form.water_intake(class="form-control log-form-control", min="0", max="20", step="0.1", placeholder="e.g. 2.5") }}
+        <div class="d-flex justify-content-between mt-1">
+          <span class="text-muted" style="font-size:.75rem;">0 L</span>
+          <span class="text-muted" style="font-size:.75rem;">3+ L recommended</span>
+        </div>
+        {% if form.water_intake.errors %}
+          <div class="text-danger small mt-1">{{ form.water_intake.errors[0] }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ── Section 4: Exercise ──────────────────────────────── -->
+    <div class="log-section-card animate-fade-up delay-200" id="section-3">
+      <div class="section-header">
+        <div class="section-icon green">🏃</div>
+        <div>
+          <div class="fw-700">Exercise</div>
+          <div class="text-muted small">Track your physical activity today</div>
+        </div>
+      </div>
+      <div class="row g-4">
+        <div class="col-md-4">
+          {{ form.exercise_minutes.label(class="form-label fw-600 small") }}
+          {{ form.exercise_minutes(class="form-control log-form-control", min="0", max="480", placeholder="e.g. 30") }}
+          {% if form.exercise_minutes.errors %}
+            <div class="text-danger small mt-1">{{ form.exercise_minutes.errors[0] }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-4">
+          {{ form.steps.label(class="form-label fw-600 small") }}
+          {{ form.steps(class="form-control log-form-control", min="0", max="100000", placeholder="e.g. 8000") }}
+          {% if form.steps.errors %}
+            <div class="text-danger small mt-1">{{ form.steps.errors[0] }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-4">
+          {{ form.workout_type.label(class="form-label fw-600 small") }}
+          {{ form.workout_type(class="form-select log-form-control") }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section 5: Food Habits ───────────────────────────── -->
+    <div class="log-section-card animate-fade-up delay-200" id="section-4">
+      <div class="section-header">
+        <div class="section-icon orange">🥗</div>
+        <div>
+          <div class="fw-700">Food Habits</div>
+          <div class="text-muted small">What did you eat today?</div>
+        </div>
+      </div>
+      <div class="row g-4">
+        <!-- Meals -->
+        <div class="col-12">
+          <div class="fw-600 small mb-3">Meals Completed</div>
+          <div class="d-flex gap-3 flex-wrap">
+            {% for field, icon, label in [(form.breakfast, '🌅', 'Breakfast'), (form.lunch, '☀️', 'Lunch'), (form.dinner, '🌙', 'Dinner')] %}
+            <div class="toggle-group">
+              {{ field(class="btn-check", id=field.id) }}
+              <label for="{{ field.id }}" class="btn btn-outline-success px-4">
+                {{ icon }} {{ label }}
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <!-- Servings -->
+        <div class="col-md-3">
+          {{ form.fruits.label(class="form-label fw-600 small") }}
+          {{ form.fruits(class="form-control log-form-control", min="0", max="20", placeholder="0") }}
+        </div>
+        <div class="col-md-3">
+          {{ form.vegetables.label(class="form-label fw-600 small") }}
+          {{ form.vegetables(class="form-control log-form-control", min="0", max="20", placeholder="0") }}
+        </div>
+        <!-- Bad food toggles -->
+        <div class="col-12">
+          <div class="fw-600 small mb-3">Unhealthy Choices</div>
+          <div class="d-flex gap-3 flex-wrap">
+            {% for field, icon, label in [(form.junk_food, '🍔', 'Junk Food'), (form.sugary_drinks, '🥤', 'Sugary Drinks')] %}
+            <div class="toggle-group">
+              {{ field(class="btn-check", id=field.id) }}
+              <label for="{{ field.id }}" class="btn btn-outline-danger px-4">
+                {{ icon }} {{ label }}
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section 6: Habits ────────────────────────────────── -->
+    <div class="log-section-card animate-fade-up delay-250" id="section-5">
+      <div class="section-header">
+        <div class="section-icon red">🚭</div>
+        <div>
+          <div class="fw-700">Habits</div>
+          <div class="text-muted small">Track harmful habits honestly — this helps improve your risk analysis</div>
+        </div>
+      </div>
+      <div class="d-flex gap-4 flex-wrap">
+        {% for field, icon, label in [(form.smoking, '🚬', 'Smoked Today'), (form.alcohol, '🍺', 'Alcohol Today'), (form.tobacco, '🌿', 'Tobacco Today')] %}
+        <div class="toggle-group">
+          {{ field(class="btn-check", id=field.id) }}
+          <label for="{{ field.id }}" class="btn btn-outline-danger px-4">
+            {{ icon }} {{ label }}
+          </label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ── Section 7: Mental Health ─────────────────────────── -->
+    <div class="log-section-card animate-fade-up delay-300" id="section-6">
+      <div class="section-header">
+        <div class="section-icon pink">🧠</div>
+        <div>
+          <div class="fw-700">Mental Health</div>
+          <div class="text-muted small">Your mental state is crucial for overall health</div>
+        </div>
+      </div>
+      <div class="row g-4">
+        <!-- Stress Level -->
+        <div class="col-md-6">
+          <label class="form-label fw-600 small">
+            Stress Level: <span id="stressVal" class="gradient-text fw-700">{{ form.stress_level.data or 5 }}</span>/10
+          </label>
+          {{ form.stress_level(class="form-range range-slider w-100", min="1", max="10", id="stressSlider",
+             oninput="document.getElementById('stressVal').textContent=this.value") }}
+          <div class="d-flex justify-content-between">
+            <span class="text-success" style="font-size:.75rem;">😌 No stress</span>
+            <span class="text-danger" style="font-size:.75rem;">😤 Very stressed</span>
+          </div>
+          {% if form.stress_level.errors %}
+            <div class="text-danger small mt-1">{{ form.stress_level.errors[0] }}</div>
+          {% endif %}
+        </div>
+        <!-- Anxiety -->
+        <div class="col-md-6">
+          {{ form.anxiety_level.label(class="form-label fw-600 small") }}
+          {{ form.anxiety_level(class="form-control log-form-control", min="1", max="10", placeholder="1–10 (optional)") }}
+          {% if form.anxiety_level.errors %}
+            <div class="text-danger small mt-1">{{ form.anxiety_level.errors[0] }}</div>
+          {% endif %}
+        </div>
+        <!-- Mood -->
+        <div class="col-12">
+          <label class="form-label fw-600 small">Today's Mood</label>
+          <div class="d-flex gap-3 flex-wrap align-items-center">
+            {% set moods = [('Happy','😊'),('Energetic','⚡'),('Neutral','😐'),('Tired','😴'),('Sad','😢'),('Anxious','😰'),('Angry','😠')] %}
+            {% for val, emoji in moods %}
+            <div>
+              <input type="radio" class="btn-check" name="mood" id="mood_{{ val }}" value="{{ val }}"
+                     {% if form.mood.data == val %}checked{% endif %}>
+              <label for="mood_{{ val }}" class="btn px-3 py-2"
+                     style="border-radius:14px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);font-size:1.5rem;"
+                     title="{{ val }}">{{ emoji }}</label>
+            </div>
+            {% endfor %}
+          </div>
+          {% if form.mood.errors %}
+            <div class="text-danger small mt-1">{{ form.mood.errors[0] }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section 8: Health Vitals ─────────────────────────── -->
+    <div class="log-section-card animate-fade-up delay-350" id="section-7">
+      <div class="section-header">
+        <div class="section-icon blue">❤️</div>
+        <div>
+          <div class="fw-700">Health Vitals</div>
+          <div class="text-muted small">Weight is required; others are optional</div>
+        </div>
+      </div>
+      <div class="row g-4">
+        <div class="col-md-3">
+          {{ form.weight.label(class="form-label fw-600 small") }}
+          {{ form.weight(class="form-control log-form-control", min="20", max="300", step="0.1", placeholder="kg") }}
+          {% if form.weight.errors %}
+            <div class="text-danger small mt-1">{{ form.weight.errors[0] }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-3">
+          {{ form.blood_pressure.label(class="form-label fw-600 small") }}
+          {{ form.blood_pressure(class="form-control log-form-control", placeholder="e.g. 120/80") }}
+          {% if form.blood_pressure.errors %}
+            <div class="text-danger small mt-1">{{ form.blood_pressure.errors[0] }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-3">
+          {{ form.blood_sugar.label(class="form-label fw-600 small") }}
+          {{ form.blood_sugar(class="form-control log-form-control", placeholder="mg/dL") }}
+          {% if form.blood_sugar.errors %}
+            <div class="text-danger small mt-1">{{ form.blood_sugar.errors[0] }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-3">
+          {{ form.heart_rate.label(class="form-label fw-600 small") }}
+          {{ form.heart_rate(class="form-control log-form-control", placeholder="bpm") }}
+          {% if form.heart_rate.errors %}
+            <div class="text-danger small mt-1">{{ form.heart_rate.errors[0] }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="d-flex justify-content-center mt-4 animate-fade-up delay-400">
+      <button type="submit" class="btn btn-gradient rounded-pill px-5 py-3 fw-700 fs-5" id="submitLogBtn">
+        <i class="bi bi-save me-2"></i>Save Daily Log
+      </button>
+    </div>
+  </form>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Highlight active mood button ───────────────────────────────
+document.querySelectorAll('input[name="mood"]').forEach(radio => {
+  const updateMood = () => {
+    document.querySelectorAll('label[for^="mood_"]').forEach(l => l.style.background = 'rgba(255,255,255,.04)');
+    if (radio.checked) {
+      document.querySelector(`label[for="${radio.id}"]`).style.background = 'rgba(108,99,255,.25)';
+      document.querySelector(`label[for="${radio.id}"]`).style.borderColor = '#6C63FF';
+    }
+  };
+  radio.addEventListener('change', updateMood);
+  if (radio.checked) updateMood();
+});
+
+// ── Animate progress bar sections as user scrolls ─────────────
+const steps = document.querySelectorAll('.form-progress-step');
+const sections = document.querySelectorAll('[id^="section-"]');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const idx = parseInt(entry.target.id.split('-')[1]);
+      steps.forEach((s, i) => s.classList.toggle('active', i <= idx));
+    }
+  });
+}, { threshold: 0.3 });
+sections.forEach(s => observer.observe(s));
+
+// ── Submit animation ──────────────────────────────────────────
+document.getElementById('dailyLogForm')?.addEventListener('submit', function() {
+  const btn = document.getElementById('submitLogBtn');
+  if (btn) { btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...'; btn.disabled = true; }
+});
+
+// ── Voice Input Speech Recognition & Parser Engine ─────────────
+(function() {
+  const toggleSwitch = document.getElementById('voiceInputToggle');
+  const assistantPanel = document.getElementById('voiceAssistantPanel');
+  const transcriptEl = document.getElementById('voiceTranscriptText');
+  const statusBadge = document.getElementById('voiceStatusBadge');
+  const micPulseRing = document.getElementById('micPulseRing');
+  const micIconStatus = document.getElementById('micIconStatus');
+  const toggleListenBtn = document.getElementById('toggleMicListenBtn');
+  const listenBtnIcon = document.getElementById('listenBtnIcon');
+  const listenBtnText = document.getElementById('listenBtnText');
+  const clearBtn = document.getElementById('clearVoiceTranscriptBtn');
+  const countBadge = document.getElementById('fieldsUpdatedCountBadge');
+  const tagsContainer = document.getElementById('voiceParsedTagsContainer');
+  const tagsEl = document.getElementById('voiceParsedTags');
+
+  if (!toggleSwitch || !assistantPanel) return;
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+  let isListening = false;
+  let fullTranscript = '';
+  const filledFieldsMap = new Map(); // Persistent map across current voice session
+
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = function(event) {
+      let interimTranscript = '';
+      let finalTranscriptChunk = '';
+
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscriptChunk += event.results[i][0].transcript + ' ';
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
+
+      if (finalTranscriptChunk) {
+        fullTranscript += finalTranscriptChunk;
+      }
+
+      const displayTranscript = fullTranscript + (interimTranscript ? ' [' + interimTranscript + ']' : '');
+      if (transcriptEl) {
+        transcriptEl.innerHTML = displayTranscript ? displayTranscript : '<em>Listening for your voice input...</em>';
+      }
+
+      parseHealthVoiceInput(fullTranscript + ' ' + interimTranscript);
+    };
+
+    recognition.onerror = function(event) {
+      console.warn("Speech recognition error:", event.error);
+      if (event.error === 'not-allowed') {
+        alert("Microphone permission denied. Please allow microphone access in your browser to use Voice Input.");
+        toggleSwitch.checked = false;
+        stopVoiceRecognition();
+      }
+    };
+
+    recognition.onend = function() {
+      if (isListening && toggleSwitch.checked) {
+        setTimeout(function() {
+          if (isListening && toggleSwitch.checked) {
+            try { recognition.start(); } catch(e) {}
+          }
+        }, 300);
+      } else {
+        updateVoiceUIState(false);
+      }
+    };
+  }
+
+  function updateVoiceUIState(active) {
+    if (active) {
+      assistantPanel.classList.remove('d-none');
+      if (micPulseRing) micPulseRing.style.opacity = '1';
+      if (micIconStatus) micIconStatus.textContent = '🎙️';
+      if (statusBadge) {
+        statusBadge.textContent = 'Listening...';
+        statusBadge.className = 'badge bg-success rounded-pill px-2 py-1 small';
+      }
+      if (listenBtnIcon) listenBtnIcon.className = 'bi bi-pause-fill me-1';
+      if (listenBtnText) listenBtnText.textContent = 'Pause';
+    } else {
+      if (micPulseRing) micPulseRing.style.opacity = '0';
+      if (micIconStatus) micIconStatus.textContent = '🎙️';
+      if (statusBadge) {
+        statusBadge.textContent = 'Paused / Off';
+        statusBadge.className = 'badge bg-secondary rounded-pill px-2 py-1 small';
+      }
+      if (listenBtnIcon) listenBtnIcon.className = 'bi bi-play-fill me-1';
+      if (listenBtnText) listenBtnText.textContent = 'Resume';
+    }
+  }
+
+  function startVoiceRecognition() {
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in your browser. Please try Google Chrome, Microsoft Edge, or Safari.");
+      toggleSwitch.checked = false;
+      return;
+    }
+    isListening = true;
+    updateVoiceUIState(true);
+    try { recognition.start(); } catch(e) {}
+  }
+
+  function stopVoiceRecognition() {
+    isListening = false;
+    updateVoiceUIState(false);
+    if (recognition) {
+      try { recognition.stop(); } catch(e) {}
+    }
+  }
+
+  toggleSwitch.addEventListener('change', function() {
+    if (this.checked) {
+      startVoiceRecognition();
+    } else {
+      stopVoiceRecognition();
+      assistantPanel.classList.add('d-none');
+    }
+  });
+
+  toggleListenBtn?.addEventListener('click', function() {
+    if (isListening) {
+      stopVoiceRecognition();
+    } else {
+      startVoiceRecognition();
+    }
+  });
+
+  clearBtn?.addEventListener('click', function() {
+    fullTranscript = '';
+    filledFieldsMap.clear();
+    if (transcriptEl) transcriptEl.innerHTML = '<em>Listening for your voice input...</em>';
+    if (countBadge) countBadge.textContent = '0 fields filled';
+    if (tagsContainer) tagsContainer.classList.add('d-none');
+    if (tagsEl) tagsEl.innerHTML = '';
+  });
+
+  // ── Helper: Normalize Spoken Words to Numeric Digits & Standard Expressions
+  function normalizeSpokenText(text) {
+    if (!text) return '';
+    let str = text.toLowerCase();
+
+    // Spoken fractions & time expressions
+    str = str.replace(/\b(half an hour|half hour)\b/g, '30 minutes');
+    str = str.replace(/\b(a quarter of an hour|15 mins)\b/g, '15 minutes');
+    str = str.replace(/\b(an hour|a hour)\b/g, '1 hour');
+    str = str.replace(/\b(a liter|a litre|a glass)\b/g, '1 liter');
+    str = str.replace(/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+and\s+a\s+half\b/g, function(m, p1) {
+      const numMap = {'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10};
+      const val = numMap[p1] || parseFloat(p1);
+      return (val + 0.5).toString();
+    });
+
+    // Decimal phrases
+    str = str.replace(/\b(seven point five|7 point 5)\b/g, '7.5');
+    str = str.replace(/\b(two point five|2 point 5)\b/g, '2.5');
+    str = str.replace(/\b(one point five|1 point 5)\b/g, '1.5');
+    str = str.replace(/\b(eight point five|8 point 5)\b/g, '8.5');
+    str = str.replace(/\b(six point five|6 point 5)\b/g, '6.5');
+
+    // Spoken BP patterns e.g. "one twenty over eighty" or "120 by 80" or "120 slash 80"
+    str = str.replace(/\b(one twenty|120)\s*(?:over|by|slash|\/)\s*(eighty|80)\b/g, '120/80');
+    str = str.replace(/\b(one thirty|130)\s*(?:over|by|slash|\/)\s*(eighty five|85)\b/g, '130/85');
+    str = str.replace(/\b(one ten|110)\s*(?:over|by|slash|\/)\s*(seventy|70)\b/g, '110/70');
+    str = str.replace(/\b(one forty|140)\s*(?:over|by|slash|\/)\s*(ninety|90)\b/g, '140/90');
+
+    // Spoken steps "10k" / "10 thousand" / "ten thousand"
+    str = str.replace(/\b(ten thousand|10 thousand|10k|10 k)\b/g, '10000');
+    str = str.replace(/\b(eight thousand|8 thousand|8k|8 k)\b/g, '8000');
+    str = str.replace(/\b(five thousand|5 thousand|5k|5 k)\b/g, '5000');
+    str = str.replace(/\b(six thousand|6 thousand|6k|6 k)\b/g, '6000');
+    str = str.replace(/\b(seven thousand|7 thousand|7k|7 k)\b/g, '7000');
+    str = str.replace(/\b(twelve thousand|12 thousand|12k|12 k)\b/g, '12000');
+    str = str.replace(/\b(fifteen thousand|15 thousand|15k|15 k)\b/g, '15000');
+
+    // Convert spoken word numbers to digits
+    const wordToNum = {
+      'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4',
+      'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9',
+      'ten': '10', 'eleven': '11', 'twelve': '12', 'thirteen': '13',
+      'fourteen': '14', 'fifteen': '15', 'sixteen': '16', 'seventeen': '17',
+      'eighteen': '18', 'nineteen': '19', 'twenty': '20', 'twenty five': '25',
+      'thirty': '30', 'forty': '40', 'fifty': '50', 'sixty': '60',
+      'seventy': '70', 'eighty': '80', 'ninety': '90', 'hundred': '100',
+      'one hundred': '100'
+    };
+
+    // Homophones / common STT replacements in context
+    str = str.replace(/\b(to|too)\s+(hours|hrs|hr|liters|litres|l|minutes|min|mins|steps|kg|kilos|bpm|fruits|veggies|servings)\b/g, '2 $2');
+    str = str.replace(/\b(for|fore)\s+(hours|hrs|hr|liters|litres|l|minutes|min|mins|steps|kg|kilos|bpm|fruits|veggies|servings)\b/g, '4 $2');
+    str = str.replace(/\b(ate)\s+(fruits|veggies|servings|hours)\b/g, '8 $2');
+
+    // Replace dictionary word numbers
+    const sortedWords = Object.keys(wordToNum).sort((a,b) => b.length - a.length);
+    for (const word of sortedWords) {
+      const reg = new RegExp(`\\b${word}\\b`, 'gi');
+      str = str.replace(reg, wordToNum[word]);
+    }
+
+    return str;
+  }
+
+  // ── Main Health Voice Input Parser Engine
+  function parseHealthVoiceInput(rawText) {
+    if (!rawText || rawText.trim() === '') return;
+    const lower = normalizeSpokenText(rawText);
+
+    function setAndHighlight(el, fieldName, valueDisplayStr) {
+      if (!el) return;
+      el.classList.remove('voice-field-highlight');
+      void el.offsetWidth;
+      el.classList.add('voice-field-highlight');
+
+      if (fieldName && valueDisplayStr) {
+        filledFieldsMap.set(fieldName, valueDisplayStr);
+        updateParsedTagsUI();
+      }
+    }
+
+    function updateParsedTagsUI() {
+      if (countBadge) {
+        countBadge.textContent = `${filledFieldsMap.size} fields filled`;
+      }
+      if (tagsEl) {
+        if (filledFieldsMap.size > 0 && tagsContainer) {
+          tagsContainer.classList.remove('d-none');
+          tagsEl.innerHTML = Array.from(filledFieldsMap.entries())
+            .map(([field, labelStr]) => `<span class="badge bg-primary bg-opacity-25 text-body border border-primary border-opacity-50 rounded-pill px-3 py-1 font-monospace small"><i class="bi bi-check-circle-fill text-success me-1"></i>${labelStr}</span>`)
+            .join('');
+        }
+      }
+    }
+
+    // 1. Sleep Hours
+    const sleepMatch = lower.match(/(?:slept|sleep)\s*(?:for)?\s*(\d+(?:\.\d+)?)\s*(?:hours|hrs|hr)?/i) ||
+                       lower.match(/(\d+(?:\.\d+)?)\s*(?:hours|hrs|hr)\s*(?:of)?\s*sleep/i) ||
+                       lower.match(/sleep\s*(?:duration|hours)?\s*(?:is|of)?\s*(\d+(?:\.\d+)?)/i);
+    if (sleepMatch) {
+      const val = parseFloat(sleepMatch[1]);
+      if (val >= 0 && val <= 24) {
+        const sleepEl = document.querySelector('input[name="sleep_hours"]');
+        if (sleepEl) {
+          sleepEl.value = val;
+          setAndHighlight(sleepEl, 'sleep_hours', `😴 Sleep: ${val}h`);
+        }
+      }
+    }
+
+    // 2. Sleep Quality (1-5)
+    const sqMatch = lower.match(/sleep\s*(?:quality|rating)\s*(?:is|of)?\s*(\d)/i) ||
+                    lower.match(/(\d)\s*out of 5\s*(?:sleep|quality)/i);
+    let sqVal = null;
+    if (sqMatch) {
+      sqVal = parseInt(sqMatch[1]);
+    } else if (lower.includes("slept very well") || lower.includes("excellent sleep") || lower.includes("great sleep")) {
+      sqVal = 5;
+    } else if (lower.includes("good sleep") || lower.includes("slept well")) {
+      sqVal = 4;
+    } else if (lower.includes("okay sleep") || lower.includes("average sleep") || lower.includes("slept okay")) {
+      sqVal = 3;
+    } else if (lower.includes("poor sleep") || lower.includes("bad sleep") || lower.includes("slept badly")) {
+      sqVal = 2;
+    } else if (lower.includes("terrible sleep") || lower.includes("horrible sleep")) {
+      sqVal = 1;
+    }
+
+    if (sqVal !== null && sqVal >= 1 && sqVal <= 5) {
+      const sqRadio = document.getElementById(`sq_${sqVal}`);
+      if (sqRadio) {
+        sqRadio.checked = true;
+        setAndHighlight(sqRadio.parentElement, 'sleep_quality', `⭐ Sleep Quality: ${sqVal}/5`);
+      }
+    }
+
+    // 3. Water Intake
+    const waterMatch = lower.match(/(?:water|drank)\s*(?:intake)?\s*(?:of)?\s*(\d+(?:\.\d+)?)\s*(?:l|liters|litres|liter|litre)?/i) ||
+                       lower.match(/(\d+(?:\.\d+)?)\s*(?:l|liters|litres)\s*(?:of)?\s*water/i);
+    const glassesMatch = lower.match(/(\d+)\s*glasses\s*(?:of)?\s*water/i);
+    if (waterMatch) {
+      const val = parseFloat(waterMatch[1]);
+      if (val >= 0 && val <= 20) {
+        const waterEl = document.querySelector('input[name="water_intake"]');
+        if (waterEl) {
+          waterEl.value = val;
+          setAndHighlight(waterEl, 'water_intake', `💧 Water: ${val} L`);
+        }
+      }
+    } else if (glassesMatch) {
+      const glasses = parseInt(glassesMatch[1]);
+      const val = parseFloat((glasses * 0.25).toFixed(1));
+      const waterEl = document.querySelector('input[name="water_intake"]');
+      if (waterEl) {
+        waterEl.value = val;
+        setAndHighlight(waterEl, 'water_intake', `💧 Water: ${val} L (${glasses} glasses)`);
+      }
+    }
+
+    // 4. Exercise duration & Workout Type
+    const exMatch = lower.match(/(?:exercise|workout|exercised)\s*(?:for)?\s*(\d+)\s*(?:minutes|min|mins)?/i) ||
+                    lower.match(/(\d+)\s*(?:minutes|min|mins)\s*(?:of)?\s*(?:exercise|workout|running|walking|cycling|swimming|gym|yoga|hiit|sports)/i) ||
+                    lower.match(/(?:ran|walked|cycled|jogged|swam)\s*(?:for)?\s*(\d+)\s*(?:minutes|min|mins)?/i) ||
+                    lower.match(/(\d+)\s*(?:hour|hrs|hr)\s*(?:of)?\s*(?:workout|exercise|running|walking|gym)/i);
+    if (exMatch) {
+      let mins = parseInt(exMatch[1]);
+      if (lower.includes("hour") && mins <= 10) mins = mins * 60; // 1 hour = 60 mins
+      const exEl = document.querySelector('input[name="exercise_minutes"]');
+      if (exEl) {
+        exEl.value = mins;
+        setAndHighlight(exEl, 'exercise_minutes', `🏃 Exercise: ${mins} min`);
+      }
+    }
+
+    // Workout type detection
+    const wTypeEl = document.querySelector('select[name="workout_type"]');
+    if (wTypeEl) {
+      const workoutMap = {
+        'running': 'Running', 'run': 'Running', 'jogged': 'Running', 'jogging': 'Running', 'treadmill': 'Running',
+        'walking': 'Walking', 'walk': 'Walking', 'walked': 'Walking',
+        'cycling': 'Cycling', 'bike': 'Cycling', 'biking': 'Cycling', 'cycled': 'Cycling',
+        'swimming': 'Swimming', 'swim': 'Swimming', 'swam': 'Swimming',
+        'gym': 'Gym/Weights', 'weights': 'Gym/Weights', 'weightlifting': 'Gym/Weights',
+        'yoga': 'Yoga', 'hiit': 'HIIT', 'cardio': 'HIIT', 'sports': 'Sports', 'football': 'Sports', 'basketball': 'Sports'
+      };
+      for (let key in workoutMap) {
+        if (lower.includes(key)) {
+          wTypeEl.value = workoutMap[key];
+          setAndHighlight(wTypeEl, 'workout_type', `🏋️ Activity: ${workoutMap[key]}`);
+          break;
+        }
+      }
+    }
+
+    // 5. Steps
+    const stepsMatch = lower.match(/(?:walked|steps|step count)\s*(?:of)?\s*(\d+)/i) ||
+                       lower.match(/(\d+)\s*steps/i);
+    if (stepsMatch) {
+      const stepsVal = parseInt(stepsMatch[1]);
+      const stepsEl = document.querySelector('input[name="steps"]');
+      if (stepsEl) {
+        stepsEl.value = stepsVal;
+        setAndHighlight(stepsEl, 'steps', `👟 Steps: ${stepsVal.toLocaleString()}`);
+      }
+    }
+
+    // 6. Meals
+    const mealCheckedList = [];
+    const meals = [
+      { name: 'breakfast', keys: ['breakfast', 'morning meal'], skipKeys: ['no breakfast', 'skipped breakfast'] },
+      { name: 'lunch', keys: ['lunch', 'afternoon meal'], skipKeys: ['no lunch', 'skipped lunch'] },
+      { name: 'dinner', keys: ['dinner', 'night meal', 'supper'], skipKeys: ['no dinner', 'skipped dinner'] }
+    ];
+
+    if (lower.includes('all meals') || lower.includes('three meals') || lower.includes('had all 3 meals')) {
+      ['breakfast', 'lunch', 'dinner'].forEach(m => {
+        const el = document.getElementById(m);
+        if (el) {
+          el.checked = true;
+          setAndHighlight(el.parentElement, m, `🍽️ Meals: All`);
+        }
+      });
+    } else {
+      meals.forEach(m => {
+        const el = document.getElementById(m.name);
+        if (el) {
+          const isSkip = m.skipKeys.some(k => lower.includes(k));
+          const isHave = m.keys.some(k => lower.includes(k));
+          if (isSkip) {
+            el.checked = false;
+          } else if (isHave) {
+            el.checked = true;
+            mealCheckedList.push(m.name.charAt(0).toUpperCase() + m.name.slice(1));
+            setAndHighlight(el.parentElement, m.name, `🍽️ Meals: ${mealCheckedList.join(', ')}`);
+          }
+        }
+      });
+    }
+
+    // 7. Fruit & Vegetables
+    const fruitMatch = lower.match(/(\d+)\s*(?:fruit|fruits|servings of fruit)/i) ||
+                       lower.match(/fruit[s]?\s*(\d+)/i) ||
+                       lower.match(/ate\s*(\d+)\s*apple[s]?/i);
+    if (fruitMatch) {
+      const val = parseInt(fruitMatch[1]);
+      const fruitEl = document.querySelector('input[name="fruits"]');
+      if (fruitEl) {
+        fruitEl.value = val;
+        setAndHighlight(fruitEl, 'fruits', `🍎 Fruits: ${val} servings`);
+      }
+    } else if (lower.includes("apple and banana") || lower.includes("fruit today")) {
+      const fruitEl = document.querySelector('input[name="fruits"]');
+      if (fruitEl && fruitEl.value === '0') {
+        fruitEl.value = 2;
+        setAndHighlight(fruitEl, 'fruits', `🍎 Fruits: 2 servings`);
+      }
+    }
+
+    const vegMatch = lower.match(/(\d+)\s*(?:vegetable|vegetables|veggies|servings of veg)/i) ||
+                     lower.match(/veggies?\s*(\d+)/i) ||
+                     lower.match(/vegetable[s]?\s*(\d+)/i);
+    if (vegMatch) {
+      const val = parseInt(vegMatch[1]);
+      const vegEl = document.querySelector('input[name="vegetables"]');
+      if (vegEl) {
+        vegEl.value = val;
+        setAndHighlight(vegEl, 'vegetables', `🥦 Veggies: ${val} servings`);
+      }
+    }
+
+    // 8. Unhealthy choices
+    const junkEl = document.getElementById('junk_food');
+    if (junkEl) {
+      if (lower.includes('no junk food') || lower.includes('no fast food') || lower.includes("didn't eat junk")) {
+        junkEl.checked = false;
+      } else if (lower.includes('junk food') || lower.includes('fast food') || lower.includes('burger') || lower.includes('pizza') || lower.includes('french fries') || lower.includes('chips')) {
+        junkEl.checked = true;
+        setAndHighlight(junkEl.parentElement, 'junk_food', `🍔 Junk Food: Yes`);
+      }
+    }
+
+    const drinkEl = document.getElementById('sugary_drinks');
+    if (drinkEl) {
+      if (lower.includes('no sugary drink') || lower.includes('no soda') || lower.includes("no soft drink")) {
+        drinkEl.checked = false;
+      } else if (lower.includes('sugary drink') || lower.includes('soft drink') || lower.includes('coke') || lower.includes('soda') || lower.includes('pepsi')) {
+        drinkEl.checked = true;
+        setAndHighlight(drinkEl.parentElement, 'sugary_drinks', `🥤 Sugary Drinks: Yes`);
+      }
+    }
+
+    // 9. Habits
+    const smokeEl = document.getElementById('smoking');
+    if (smokeEl) {
+      if (lower.includes('no smoking') || lower.includes("didn't smoke") || lower.includes('not smoking') || lower.includes('smoke free')) {
+        smokeEl.checked = false;
+      } else if (lower.includes('smoked') || lower.includes('smoking active') || lower.includes('cigarette')) {
+        smokeEl.checked = true;
+        setAndHighlight(smokeEl.parentElement, 'smoking', `🚬 Smoking: Yes`);
+      }
+    }
+
+    const alcEl = document.getElementById('alcohol');
+    if (alcEl) {
+      if (lower.includes('no alcohol') || lower.includes("didn't drink") || lower.includes('not drinking') || lower.includes('sober')) {
+        alcEl.checked = false;
+      } else if (lower.includes('alcohol') || lower.includes('drank beer') || lower.includes('had drinks') || lower.includes('had wine')) {
+        alcEl.checked = true;
+        setAndHighlight(alcEl.parentElement, 'alcohol', `🍺 Alcohol: Yes`);
+      }
+    }
+
+    const tobEl = document.getElementById('tobacco');
+    if (tobEl) {
+      if (lower.includes('no tobacco') || lower.includes("didn't use tobacco")) {
+        tobEl.checked = false;
+      } else if (lower.includes('tobacco') || lower.includes('chewed tobacco')) {
+        tobEl.checked = true;
+        setAndHighlight(tobEl.parentElement, 'tobacco', `🌿 Tobacco: Yes`);
+      }
+    }
+
+    // 10. Stress level (1 to 10)
+    const stressMatch = lower.match(/stress\s*(?:level)?\s*(?:is|of)?\s*(\d+)/i) ||
+                        lower.match(/(\d+)\s*out of 10\s*stress/i);
+    let stressVal = null;
+    if (stressMatch) {
+      stressVal = parseInt(stressMatch[1]);
+    } else if (lower.includes('no stress') || lower.includes('relaxed') || lower.includes('very calm')) {
+      stressVal = 1;
+    } else if (lower.includes('low stress')) {
+      stressVal = 2;
+    } else if (lower.includes('moderate stress')) {
+      stressVal = 5;
+    } else if (lower.includes('high stress')) {
+      stressVal = 8;
+    } else if (lower.includes('very stressed') || lower.includes('extreme stress')) {
+      stressVal = 9;
+    }
+
+    if (stressVal !== null && stressVal >= 1 && stressVal <= 10) {
+      const stressEl = document.getElementById('stressSlider');
+      const stressValSpan = document.getElementById('stressVal');
+      if (stressEl) {
+        stressEl.value = stressVal;
+        if (stressValSpan) stressValSpan.textContent = stressVal;
+        setAndHighlight(stressEl, 'stress_level', `🧘 Stress: ${stressVal}/10`);
+      }
+    }
+
+    // 11. Anxiety level (1 to 10)
+    const anxMatch = lower.match(/anxiety\s*(?:level)?\s*(?:is|of)?\s*(\d+)/i) ||
+                     lower.match(/(\d+)\s*out of 10\s*anxiety/i);
+    let anxVal = null;
+    if (anxMatch) {
+      anxVal = parseInt(anxMatch[1]);
+    } else if (lower.includes('no anxiety')) {
+      anxVal = 1;
+    } else if (lower.includes('mild anxiety')) {
+      anxVal = 3;
+    } else if (lower.includes('high anxiety')) {
+      anxVal = 8;
+    }
+
+    if (anxVal !== null && anxVal >= 1 && anxVal <= 10) {
+      const anxEl = document.querySelector('input[name="anxiety_level"]');
+      if (anxEl) {
+        anxEl.value = anxVal;
+        setAndHighlight(anxEl, 'anxiety_level', `🧠 Anxiety: ${anxVal}/10`);
+      }
+    }
+
+    // 12. Mood
+    const moodMap = {
+      'happy': 'Happy', 'cheerful': 'Happy', 'great mood': 'Happy', 'good mood': 'Happy', 'feeling great': 'Happy',
+      'energetic': 'Energetic', 'active': 'Energetic', 'full of energy': 'Energetic',
+      'neutral': 'Neutral', 'okay': 'Neutral', 'fine': 'Neutral',
+      'tired': 'Tired', 'sleepy': 'Tired', 'exhausted': 'Tired',
+      'sad': 'Sad', 'depressed': 'Sad', 'down': 'Sad',
+      'anxious': 'Anxious', 'worried': 'Anxious', 'nervous': 'Anxious',
+      'angry': 'Angry', 'frustrated': 'Angry', 'upset': 'Angry'
+    };
+    for (let key in moodMap) {
+      if (lower.includes(key)) {
+        const moodRadio = document.getElementById(`mood_${moodMap[key]}`);
+        if (moodRadio) {
+          moodRadio.checked = true;
+          moodRadio.dispatchEvent(new Event('change'));
+          setAndHighlight(moodRadio.parentElement, 'mood', `😊 Mood: ${moodMap[key]}`);
+        }
+        break;
+      }
+    }
+
+    // 13. Weight (kg)
+    const weightMatch = lower.match(/weight\s*(?:is|of)?\s*(\d+(?:\.\d+)?)/i) ||
+                        lower.match(/(\d+(?:\.\d+)?)\s*(?:kg|kilograms|kilos)/i);
+    const lbsMatch = lower.match(/(\d+(?:\.\d+)?)\s*(?:lbs|pounds)/i);
+    if (weightMatch) {
+      const val = parseFloat(weightMatch[1]);
+      if (val >= 20 && val <= 300) {
+        const weightEl = document.querySelector('input[name="weight"]');
+        if (weightEl) {
+          weightEl.value = val;
+          setAndHighlight(weightEl, 'weight', `⚖️ Weight: ${val} kg`);
+        }
+      }
+    } else if (lbsMatch) {
+      const lbs = parseFloat(lbsMatch[1]);
+      const kg = Math.round((lbs / 2.20462) * 10) / 10;
+      const weightEl = document.querySelector('input[name="weight"]');
+      if (weightEl) {
+        weightEl.value = kg;
+        setAndHighlight(weightEl, 'weight', `⚖️ Weight: ${kg} kg (${lbs} lbs)`);
+      }
+    }
+
+    // 14. Blood Pressure (e.g., 120/80 or 120 over 80)
+    const bpMatch = lower.match(/(?:blood\s*pressure|bp)\s*(?:is)?\s*(\d{2,3})\s*(?:over|\/|by|slash)\s*(\d{2,3})/i) ||
+                    lower.match(/(\d{2,3})\s*(?:over|\/|by|slash)\s*(\d{2,3})/i);
+    if (bpMatch) {
+      const bpStr = `${bpMatch[1]}/${bpMatch[2]}`;
+      const bpEl = document.querySelector('input[name="blood_pressure"]');
+      if (bpEl) {
+        bpEl.value = bpStr;
+        setAndHighlight(bpEl, 'blood_pressure', `❤️ BP: ${bpStr}`);
+      }
+    }
+
+    // 15. Fasting Blood Sugar
+    const sugarMatch = lower.match(/(?:blood\s*sugar|fasting\s*sugar|sugar|glucose)\s*(?:is)?\s*(\d+)/i) ||
+                       lower.match(/(\d+)\s*mg\/dl/i);
+    if (sugarMatch) {
+      const val = parseInt(sugarMatch[1]);
+      const sugarEl = document.querySelector('input[name="blood_sugar"]');
+      if (sugarEl) {
+        sugarEl.value = val;
+        setAndHighlight(sugarEl, 'blood_sugar', `🩸 Sugar: ${val} mg/dL`);
+      }
+    }
+
+    // 16. Heart Rate
+    const hrMatch = lower.match(/(?:heart\s*rate|pulse|heartbeat)\s*(?:is)?\s*(\d+)/i) ||
+                    lower.match(/(\d+)\s*bpm/i);
+    if (hrMatch) {
+      const val = parseInt(hrMatch[1]);
+      const hrEl = document.querySelector('input[name="heart_rate"]');
+      if (hrEl) {
+        hrEl.value = val;
+        setAndHighlight(hrEl, 'heart_rate', `💓 Heart Rate: ${val} bpm`);
+      }
+    }
+
+    // 17. Spoken Action Commands
+    if (lower.includes('submit log') || lower.includes('save log') || lower.includes('save daily log') || lower.includes('submit form')) {
+      const submitBtn = document.getElementById('submitLogBtn');
+      if (submitBtn) {
+        submitBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setAndHighlight(submitBtn, 'command', `🚀 Action: Submitting Log...`);
+        setTimeout(() => submitBtn.click(), 1000);
+      }
+    } else if (lower.includes('clear form') || lower.includes('reset form') || lower.includes('reset tracker')) {
+      const formEl = document.getElementById('dailyLogForm');
+      if (formEl) {
+        formEl.reset();
+        filledFieldsMap.clear();
+        updateParsedTagsUI();
+      }
+    }
+  }
+})();
+</script>
+{% endblock %}
