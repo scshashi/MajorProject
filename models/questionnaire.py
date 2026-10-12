@@ -103,6 +103,9 @@ class Questionnaire(db.Model):
 
     # ── Helpers ───────────────────────────────────────────────────────────
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     def to_feature_dict(self) -> dict:
         """
         Return only the ML feature columns as a flat dictionary.

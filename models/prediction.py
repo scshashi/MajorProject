@@ -103,6 +103,9 @@ class Prediction(db.Model):
         lazy="dynamic", cascade="all, delete-orphan"
     )
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     # ── Computed properties ────────────────────────────────────────────────
 
     @property
