@@ -55,6 +55,9 @@ class Recommendation(db.Model):
     # ── Timestamps ────────────────────────────────────────────────────────
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     # ── Relationships ─────────────────────────────────────────────────────
     prediction = db.relationship("Prediction", back_populates="recommendations")
 

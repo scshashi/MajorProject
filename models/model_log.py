@@ -44,6 +44,9 @@ class ModelLog(db.Model):
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     # ── Helpers ───────────────────────────────────────────────────────────
 
     def get_extra_metrics(self) -> dict:

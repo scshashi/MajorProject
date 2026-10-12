@@ -31,6 +31,9 @@ class Report(db.Model):
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     # ── Relationships ─────────────────────────────────────────────────────
     user       = db.relationship("User",       back_populates="reports")
     prediction = db.relationship("Prediction", back_populates="reports")

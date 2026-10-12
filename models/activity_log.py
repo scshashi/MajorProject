@@ -27,6 +27,9 @@ class UserActivityLog(db.Model):
     # ── Relationship ───────────────────────────────────────────────────────
     user = db.relationship("User", backref=db.backref("activity_logs", lazy="dynamic", cascade="all, delete-orphan"))
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     def to_dict(self) -> dict:
         return {
             "id":         self.id,

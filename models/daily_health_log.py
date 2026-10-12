@@ -86,6 +86,9 @@ class DailyHealthLog(db.Model):
     # ── Relationships ──────────────────────────────────────────────────────
     user = db.relationship("User", back_populates="daily_health_logs")
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     # ── Computed helpers ───────────────────────────────────────────────────
 
     @property

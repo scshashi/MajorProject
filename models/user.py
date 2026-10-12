@@ -79,6 +79,9 @@ class User(UserMixin, db.Model):
         order_by="desc(DailyHealthLog.log_date)",
     )
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     # ── Password helpers ───────────────────────────────────────────────────
 
     @property

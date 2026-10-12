@@ -27,6 +27,9 @@ class Admin(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     last_login = db.Column(db.DateTime, nullable=True)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     # ── Password helpers ───────────────────────────────────────────────────
 
     @property
