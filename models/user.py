@@ -36,7 +36,7 @@ class User(UserMixin, db.Model):
     # ── Account credentials ────────────────────────────────────────────────
     email             = db.Column(db.String(180), unique=True, nullable=False, index=True)
     _password_hash    = db.Column("password_hash", db.String(255), nullable=False)
-    is_email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    is_email_verified = db.Column(db.Boolean, default=True, nullable=False)
 
     # ── Role ───────────────────────────────────────────────────────────────
     role = db.Column(db.String(20), default="user", nullable=False)

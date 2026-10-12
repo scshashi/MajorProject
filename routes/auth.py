@@ -70,23 +70,12 @@ def register():
             email     = email,
         )
         user.password = form.password.data   # triggers bcrypt hash
+        # Auto-verify on registration
+        user.is_email_verified = True
         db.session.add(user)
         db.session.commit()
 
-        # Email verification handling
-        has_smtp = bool(current_app.config.get("MAIL_USERNAME") and current_app.config.get("MAIL_PASSWORD"))
-        email_sent = False
-
-        if has_smtp:
-            email_sent = send_verification_email(user)
-
-        if email_sent:
-            flash("Registration successful! Please check your email to verify your account.", "success")
-        else:
-            user.is_email_verified = True
-            db.session.commit()
-            flash("Account created successfully! You can now log in immediately.", "success")
-
+        flash("Account created successfully! You can now log in.", "success")
         return redirect(url_for("auth.login"))
 
     return render_template("auth/register.html", form=form)
@@ -169,14 +158,10 @@ def login():
             flash("Your account has been disabled. Please contact support.", "danger")
             return render_template("auth/login.html", form=form)
 
+        # Auto-verify existing unverified users so nobody is blocked
         if not user.is_email_verified:
-            has_smtp = bool(current_app.config.get("MAIL_USERNAME") and current_app.config.get("MAIL_PASSWORD"))
-            if not has_smtp:
-                user.is_email_verified = True
-                db.session.commit()
-            else:
-                flash("Please verify your email address before logging in.", "warning")
-                return render_template("auth/login.html", form=form)
+            user.is_email_verified = True
+            db.session.commit()
 
         login_user(user, remember=form.remember_me.data)
         user.last_login = datetime.utcnow()
