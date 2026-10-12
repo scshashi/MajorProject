@@ -27,13 +27,15 @@ def _generate_token(email: str, salt: str) -> str:
     return s.dumps(email, salt=salt)
 
 
-def send_verification_email(user) -> None:
+def send_verification_email(user) -> bool:
     """
     Send an account email-verification message.
-
-    Args:
-        user: User ORM instance with .email and .full_name attributes.
+    Returns True if successfully sent, False if SMTP is unconfigured or failed.
     """
+    if not current_app.config.get("MAIL_USERNAME") or not current_app.config.get("MAIL_PASSWORD"):
+        current_app.logger.info("SMTP credentials not configured. Skipping email delivery.")
+        return False
+
     token = _generate_token(user.email, salt="email-verify")
     verify_url = url_for("auth.verify_email", token=token, _external=True)
 
@@ -45,10 +47,12 @@ def send_verification_email(user) -> None:
     )
     try:
         mail.send(msg)
+        return True
     except Exception as exc:
         current_app.logger.error(
             f"Failed to send verification email to {user.email}: {exc}"
         )
+        return False
 
 
 def send_password_reset_email(user, token: str = None) -> None:

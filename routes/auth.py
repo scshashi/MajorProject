@@ -73,20 +73,19 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        # In development, auto-verify so users can log in without SMTP setup
-        if os.environ.get('FLASK_ENV', 'development') == 'development':
+        # Email verification handling
+        has_smtp = bool(current_app.config.get("MAIL_USERNAME") and current_app.config.get("MAIL_PASSWORD"))
+        email_sent = False
+
+        if has_smtp:
+            email_sent = send_verification_email(user)
+
+        if email_sent:
+            flash("Registration successful! Please check your email to verify your account.", "success")
+        else:
             user.is_email_verified = True
             db.session.commit()
-            flash("Account created successfully! You can now log in immediately (dev mode).", "success")
-        else:
-            try:
-                send_verification_email(user)
-                flash("Registration successful! Please check your email to verify your account.", "success")
-            except Exception as exc:
-                current_app.logger.error(f"Failed to send email verification: {exc}")
-                user.is_email_verified = True
-                db.session.commit()
-                flash("Account created! Email delivery failed — logged in directly for demo.", "warning")
+            flash("Account created successfully! You can now log in immediately.", "success")
 
         return redirect(url_for("auth.login"))
 
@@ -171,8 +170,13 @@ def login():
             return render_template("auth/login.html", form=form)
 
         if not user.is_email_verified:
-            flash("Please verify your email address before logging in.", "warning")
-            return render_template("auth/login.html", form=form)
+            has_smtp = bool(current_app.config.get("MAIL_USERNAME") and current_app.config.get("MAIL_PASSWORD"))
+            if not has_smtp:
+                user.is_email_verified = True
+                db.session.commit()
+            else:
+                flash("Please verify your email address before logging in.", "warning")
+                return render_template("auth/login.html", form=form)
 
         login_user(user, remember=form.remember_me.data)
         user.last_login = datetime.utcnow()
