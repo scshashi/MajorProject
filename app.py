@@ -111,7 +111,11 @@ def _seed_default_admin(app: Flask) -> None:
                 db.session.commit()
         except Exception as e:
             db.session.rollback()
-            print(f"[AdminSeed] Error seeding admin account: {e}")
+            # If table or user already exists (e.g. concurrent Gunicorn worker boot), ignore safely
+            if "already exists" in str(e) or "UNIQUE constraint" in str(e):
+                pass
+            else:
+                app.logger.warning(f"[AdminSeed] Notice: {e}")
 
 def _create_directories(app: Flask) -> None:
     """Create runtime directories if they do not already exist."""
