@@ -141,3 +141,27 @@ def download_report(report_id: int):
 def about():
     """Static about page describing the application."""
     return render_template("main/about.html")
+
+
+# ── PWA & Root Assets ──────────────────────────────────────────────────────
+
+@main_bp.route("/sw.js")
+def service_worker():
+    """Serve Service Worker from root domain with global scope."""
+    response = current_app.send_static_file("sw.js")
+    response.headers["Service-Worker-Allowed"] = "/"
+    response.headers["Content-Type"] = "application/javascript"
+    return response
+
+
+@main_bp.route("/manifest.json")
+def manifest():
+    """Serve PWA Web App Manifest."""
+    return current_app.send_static_file("manifest.json")
+
+
+@main_bp.route("/favicon.ico")
+def favicon():
+    """Serve root favicon."""
+    return current_app.send_static_file("favicon.ico")
+
