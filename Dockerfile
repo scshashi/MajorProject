@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 COPY . .
 
 # ── Create runtime directories ─────────────────────────────────────────
-RUN mkdir -p uploads datasets reports ml/saved_models
+RUN mkdir -p uploads datasets reports ml/saved_models database
 
 # ── Non-root user for security ─────────────────────────────────────────
 RUN useradd -m -u 1000 appuser && chown -R appuser /app

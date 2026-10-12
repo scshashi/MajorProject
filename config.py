@@ -113,10 +113,13 @@ class ProductionConfig(BaseConfig):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
         
     if not db_url:
-        db_url = (
-            f"mysql+pymysql://{BaseConfig.DB_USER}:{BaseConfig.DB_PASSWORD}"
-            f"@{BaseConfig.DB_HOST}:{BaseConfig.DB_PORT}/{BaseConfig.DB_NAME}"
-        )
+        if os.environ.get("DB_HOST"):
+            db_url = (
+                f"mysql+pymysql://{BaseConfig.DB_USER}:{BaseConfig.DB_PASSWORD}"
+                f"@{BaseConfig.DB_HOST}:{BaseConfig.DB_PORT}/{BaseConfig.DB_NAME}"
+            )
+        else:
+            db_url = f"sqlite:///{os.path.join(os.getcwd(), 'database', 'healthai.db')}"
         
     SQLALCHEMY_DATABASE_URI = db_url
     SQLALCHEMY_ENGINE_OPTIONS = {
